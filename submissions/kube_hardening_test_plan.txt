@@ -1,0 +1,8 @@
+- How will you test the changes?
+In this event, recommended to setup a sandbox environment will be the best option for conducting testing cluster, the sandbox cluster will mimic production cluster to maximize the accuracy of tests. 
+This is good practice that we can implement as part of our deployment strategy and Software Development Lifecycle.
+
+- How will you ensure the changes don't negatively affect your cluster?
+There are some errors prevention methods: example like setup the observability and monitoring for the sandbox cluster where we can monitor the performance metrics using Prometheus and Grafana, 
+also we can collect logs and traces to determine the root cause of problems and troubleshoot more eficiently. 
+Provide the proper documentation like test cases, and recording all the steps and testing tools that using in the testing stage to avoid any missing steps and test cases.

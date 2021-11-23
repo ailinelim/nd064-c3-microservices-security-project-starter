@@ -1,0 +1,131 @@
+Docker Threat Modeling
+Given Docker's system components and the STRIDE framework, identify five potential threats that may arise.
+
+1.Spoofing - An image may be spoofed with malicious images or libraries as part of the container layers, which affects image/container security. Add proper logging at "info" level could help detect the issue.
+
+2.Tampering - Due to misconfiguration of docker, attacker could hijack the docker client to pull down an image with malware e.g. /var/lib/docker folder may be tampered, lead to system compromise. To remediate, could audit /var/lib/docker folder.
+
+3.Repudiation - A user may make changes to the daemon configuration (/etc/docker/daemon.json) that are not legitimate, leading to misconfiguration. Could audit /etc/docker/daemon.json to log events on the file.
+
+4.Denial of Service - Excessive traffic from the client could overwhelm the daemon (often on the same machine) and could cause it to crash, leading to a client compromise. Set docker logging to the "info" level helps detect related issues.
+
+5.Elevation of Privilege - Docker images/containers with elevated privileges is a high risk potential surface as it allows the container access more things that it's needed, which make the attacker easily to get access to the malicious images/containers. Set docker logging to the "info" level could help detect related issues.
+
+ 
+
+
+Kubernetes Threat Modeling
+Given Kubernetes' system components and the STRIDE framework, identify five potential threats that may arise.
+
+1.Tampering - The etcd configuration may be tampered with by an attacker, modifying vital system-level configurations such as pod specs. This can be mitigated by restricting permissions on etcd files to 644 or more restrictive and that the pod spec file is set to root ownership.
+
+2.Information Disclosure - Kube-proxy can be expose sensitive information via the etcd key-value store. To ensure the kube-proxy does not expose information, the --kubeconfig should be set to permissions 644 or less permissive.
+
+3.Denial of Service - In the event of excessive traffic to the API server can overwhelm the endpoint. kube-scheduler can incorrectly schedule the pod. This can be mitigated by enabling node-restriction admission controller to vet all incoming requests and only allow those coming from registered nodes.
+
+4.Elevation of Privilege - Several Kubernetes distributions have made the decision that they don’t consider malicious containers part of their threat model, such as the privilege can be abused by using the privileged flag. This should be avoided in all cases. This affects kube-apiserver.
+
+5.Repudiation - Unauthorized changes can be made to kubelet. To avoid this, kubelet authentication should be TLS and weak/ basic auth should not be allowed.
+
+
+
+
+Docker-bench Run Results and Analysis
+From the failed findings, select and document 3 findings from the Docker-bench results that you want to harden based on the 5 attack surface areas you identified in Step 1. 
+At least 1 of the 3 hardened findings should be different from the ones mentioned in the exercise (i.e. 5.10, 5.14, and 5.22).
+I have chosen the following findings to evaluate and remediate. Let's take a closer look at these three.
+The following are based on the CIS Docker Benchmark v1.2 :--
+[FAIL] 1.2.3 Ensure auditing is configured for the docker daemon (Scored)
+[FAIL] 1.2.4 Ensure auditing is configured for Docker files and directories - /var/lib/docker (Scored)
+[FAIL] 1.2.5 Ensure auditing is configured for Docker files and directories - /etc/docker (Scored)
+[FAIL] 1.2.6 Ensure auditing is configured for Docker files and directories - docker.service (Scored)
+[FAIL] 1.2.7 Ensure auditing is configured for Docker files and directories - docker.socket (Scored)
+[FAIL] 1.2.8 Ensure auditing is configured for Docker files and directories - /etc/default/docker (Scored)
+[FAIL] 1.2.9 Ensure auditing is configured for Docker files and directories - /etc/sysconfig/docker (Scored)
+[FAIL] 1.2.10 Ensure auditing is configured for Docker files and directories - /etc/docker/daemon.json (Scored)
+[FAIL] 1.2.11 Ensure auditing is configured for Docker files and directories - /usr/bin/docker-containerd (Scored)
+[FAIL] 1.2.12 Ensure auditing is configured for Docker files and directories - /usr/sbin/runc (Scored)
+
+The above resolved/hardened using https://www.techrepublic.com/article/how-to-use-docker-bench-for-security-to-audit-your-container-deployments/
+zypper install audit
+then edit /etc/audit/audit.rules then run auditctl -l 
+localhost:# auditctl -l
+-w /usr/bin/dockerd -k docker
+-w /usr/bin/docker -k docker
+-w /var/lib/docker -k docker
+-w /etc/docker -k docker
+-w /etc/docker/daemon.json -k docker
+-w /usr/bin/containerd -k docker
+-w /usr/sbin/runc -k docker
+-w /usr/lib/systemd/system/docker-registry.service -k docker
+-w /usr/lib/systemd/system/docker.service -k docker
+-w /var/run/docker.sock -k docker
+-w /etc/sysconfig/docker -k docker
+-w /etc/sysconfig/docker-network -k docker
+-w /etc/sysconfig/docker-registry -k docker
+-w /etc/sysconfig/docker-storage -k docker
+-w /etc/default/docker -k docker
+
+== Remediations ==
+1.2.3 You should add rules for the Docker daemon. For example:
+Add the line below to the
+/etc/audit/audit.rules file:
+-w /usr/bin/dockerd -k docker
+Then, restart the audit daemon using the following command service auditd restart"
+
+1.2.4 You should add a rule for the /var/lib/docker directory.
+For example, Add the line as below to the /etc/audit/audit.rules file:
+-w /var/lib/docker -k docker
+Then restart the audit daemon. For example,
+service auditd restart"
+
+1.2.5 You should add a rule for the /etc/docker directory.
+For example: Add the line below to the /etc/audit/audit.rules file:
+-w /etc/docker -k docker
+Then restart the audit daemon. For example:
+service auditd restart"
+
+1.2.6 If the file exists, a rule for it should be added.
+For example: Add the line as below in /etc/audit/audit.rules file:
+-w /usr/lib/systemd/system/docker.service -k docker
+Then restart the audit daemon. For example:
+service auditd restart
+
+1.2.7 Usage: grep [OPTION]... PATTERN [FILE]...
+Try 'grep --help' for more information.
+
+1.2.8 You should add a rule for the /etc/default/docker file.
+For example: Add the line below to the /etc/audit/audit.rules file:
+-w /etc/default/docker -k docker
+Then restart the audit daemon. For example:
+service auditd restart
+
+1.2.9 You should add a rule for the /etc/sysconfig/docker file.
+For example: Add the line below to the /etc/audit/audit.rules file:
+-w /etc/sysconfig/docker -k docker
+Then restart the audit daemon. For example:
+service auditd restart
+
+1.2.10 You should add a rule for the /etc/docker/daemon.json file.
+For example:
+Add the line below to the /etc/audit/audit.rules file:
+-w /etc/docker/daemon.json -k docker
+Then restart the audit daemon.
+For example:
+service auditd restart
+
+1.2.11 You should add a rule for the /usr/bin/containerd file.
+For example:
+Add the line below to the /etc/audit/audit.rules file:
+-w /usr/bin/containerd -k docker
+Then restart the audit daemon.
+For example:
+service auditd restart
+
+1.2.12 You should add a rule for /usr/sbin/runc file.
+For example:
+Add the line below to the /etc/audit/audit.rules file:
+-w /usr/sbin/runc -k docker
+Then restart the audit daemon.
+For example:
+service auditd restart

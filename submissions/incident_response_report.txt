@@ -1,0 +1,26 @@
+1.Incident commander name
+  Ailine Lim
+
+2.Executive summary of what happened
+   - Suspiciuous CPU activity results in a cryptomining attack.
+   - Found three pods running three different crypto miners were launched. moneropool, minergate, and unirversal cryptonight.
+
+3.Summary of what was affected
+   - The attacker was able to get control of the cluster and run these containers on the cluster. 
+   - Attackers are after compute resources to abuse for crypto-mining.  
+   - We can see that in the last few minutes there is a significant spike in the CPU utilization for both Kubernetes and the default. 
+   - This is related to the crypto miners being started. The attacker was able to execute the pods with kubectl, which means they have access to an administrative terminal and the kubeconfig file. 
+  
+4.Summary of the impact
+  Monitoring reports CPU utilization produced lot of spikes between that period.
+
+5.Summary of the remediation steps
+   a. The administrator can run the following command to evict the pods:
+        kubectl --kubeconfig kube_config_cluster.yml delete pod <pod_name> --grace-period=0 --force
+   b. The administrator can limit access to the resources such that attacker cannot run command on the cluster.
+   c. The administrator can verify CPU activity stabilization in the grafana.
+
+6.Summary of lessons learned
+    - We can tighten/restrict the priviledge access to the Kubernetes API server from administrative terminals and the Grafana dashboards.
+    - Admission controllers can also be configured to disallow unknown images to be used to create containers.
+    - We can update the priority of Falco rules for the metrics endpoint to the highest level.
